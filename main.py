@@ -1,8 +1,13 @@
+import ctypes
+import json
+
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import auth
 from tkinter import *
 import re
+
+from google.auth.transport import requests
 
 cred = credentials.Certificate('auth-python-12139-firebase-adminsdk-1y5gj-da7bb50334.json')
 
@@ -10,48 +15,36 @@ firebase_admin.initialize_app(cred)
 
 regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
 
+currentPage = "login"
+rest_api_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
 
-class login(Tk):
+
+class Registration(Tk):
     def __init__(self):
         super().__init__()
         self.geometry("1380x768")
 
     def Label(self):
-        self.backGroundImage = PhotoImage(file="login_background.png")
+        self.backGroundImage = PhotoImage(file="register_page_1.png")
         self.backGroundImageLabel = Label(self, image=self.backGroundImage)
         self.backGroundImageLabel.place(x=0, y=0)
 
-        self.title = Label(self, text="project-b", font="Futura-Heavy 60")
-        self.title.place(x=542, y=169)
-
-        self.title = Label(self, text="register", font="Futura-Heavy 20")
-        self.title.place(x=650, y=280)
-
-        self.title = Label(self, text="email:", font="Futura-Heavy 15")
-        self.title.place(x=475, y=377)
-
-        self.title = Label(self, text="password:", font="Futura-Heavy 15")
-        self.title.place(x=475, y=429)
-
-        self.title = Label(self, text="confirm password:", font="Futura-Heavy 15")
-        self.title.place(x=475, y=481)
-
     def Entry(self):
         self.email = Entry(self, borderwidth=0, highlightthickness=0, font="25")
-        self.email.place(x=535, y=377, width=370, height=31)
+        self.email.place(x=550, y=379, width=335, height=24)
 
         self.password = Entry(self, borderwidth=0, show="*", highlightthickness=0, font="25")
-        self.password.place(x=570, y=429, width=335, height=31)
+        self.password.place(x=585, y=431, width=300, height=24)
 
         self.password_confirm = Entry(self, borderwidth=0, show="*", highlightthickness=0, font="25")
-        self.password_confirm.place(x=640, y=481, width=265, height=31)
+        self.password_confirm.place(x=655, y=483, width=230, height=24)
 
     def Button(self):
-        self.loginButtonImage = PhotoImage(file="login_button.png")
-        self.loginButton = Button(self, image=self.loginButtonImage, command=self.Output, border=0)
+        self.loginButtonImage = PhotoImage(file="register_button.png")
+        self.loginButton = Button(self, image=self.loginButtonImage, command=self.Register, border=0)
         self.loginButton.place(x=803, y=529)
 
-    def Output(self):
+    def Register(self):
         """THIS IS WHERE THE REGISTRATION HAPPENS"""
         Email = self.email.get()
         Password = self.password.get()
@@ -59,30 +52,66 @@ class login(Tk):
 
         if re.search(regex, Email):
             print("Email is valid")
+            if len(Password) < 6:
+                ctypes.windll.user32.MessageBoxW(0, "Entered password is too weak!", "Error", 0)
+                print("Password is too weak")
+            else:
+                print("Password is good")
+                if Password == Password_confirm:
+                    print("Passwords match")
+                    user = auth.create_user(email=Email, password=Password)
+                    print("User created successfully! Users ID is: {0}".format(user.uid))
+                else:
+                    ctypes.windll.user32.MessageBoxW(0, "Passwords do not match!", "Error", 0)
+                    print("Passwords do not match")
         else:
+            ctypes.windll.user32.MessageBoxW(0, "Entered email is not valid!", "Error", 0)
             print("Email is not valid")
 
-        if len(Password) < 6:
-            print("Password is too weak")
-        else:
-            print("Password is good")
 
-        if Password == Password_confirm:
-            print("Passwords match")
-        else:
-            print("Passwords do not match")
+class Login(Tk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("1380x768")
 
-        if Password == Password_confirm:
-            user = auth.create_user(email=Email, password=Password)
+    def Label(self):
+        self.log_backGroundImage = PhotoImage(file="login_page_1.png")
+        self.log_backGroundImageLabel = Label(self, image=self.log_backGroundImage)
+        self.log_backGroundImageLabel.place(x=0, y=0)
 
-            print("User created successfully! Users ID is: {0}".format(user.uid))
-        else:
-            print("Failed to create a user!")
+    def Entry(self):
+        self.log_email = Entry(self, borderwidth=0, highlightthickness=0, font="25")
+        self.log_email.place(x=550, y=379, width=335, height=24)
+
+        self.log_password = Entry(self, borderwidth=0, show="*", highlightthickness=0, font="25")
+        self.log_password.place(x=585, y=431, width=300, height=24)
+
+    def Button(self):
+        self.loginButtonImage = PhotoImage(file="login_button.png")
+        self.loginButton = Button(self, image=self.loginButtonImage, command=self.Log, border=0)
+        self.loginButton.place(x=803, y=483)
+
+    def Log(self):
+        Login_email = self.log_email.get()
+        Login_password = self.log_password.get()
+
+        checkUser = auth.get_user_by_email(Login_email)
+        print(checkUser.uid)
+
 
 
 if __name__ == "__main__":
-    Login = login()
+    '''
+    Login = Login()
     Login.Label()
     Login.Entry()
     Login.Button()
-    Login.mainloop()
+    '''
+
+    '''THIS IS FOR THE REGISTRATION PAGE'''
+    Registration = Registration()
+    Registration.Label()
+    Registration.Entry()
+    Registration.Button()    
+
+    Registration.mainloop()

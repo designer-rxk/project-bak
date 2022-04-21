@@ -92,6 +92,7 @@ def callWorkout():
     workout = Workout()
     workout.grab_set()
     workout.Label()
+    workout.Button()
     workout.mainloop()
 
 
@@ -171,6 +172,8 @@ class Workout(Toplevel):
 
 
 def calculate_angle(a, b, c):
+    # Width 640 Height 480  -- Default, because changing the size lowers the quality
+
     a = np.array(a)  # First
     b = np.array(b)  # Mid
     c = np.array(c)  # End
@@ -278,7 +281,10 @@ def BicepCurl():
                                       mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                       mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
 
-            cv2.imshow('Bicep curl counter', image)
+            bicepImage = cv2.imread('images/bicep_curl_big.png')
+            numpy_horizontal_concat = np.concatenate((image, bicepImage), axis=1)
+
+            cv2.imshow('Bicep curl counter..', numpy_horizontal_concat)
 
             if cv2.waitKey(10) & 0xFF == ord('q'):
                 break
@@ -380,7 +386,10 @@ def OverheadPress():
                                       mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                       mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
 
-            cv2.imshow('Overhead press counter', image)
+            overheadImage = cv2.imread('images/overhead_press_big.png')
+            numpy_horizontal_concat = np.concatenate((image, overheadImage), axis=1)
+
+            cv2.imshow('Overhead press counter..', numpy_horizontal_concat)
 
             if cv2.waitKey(10) & 0xFF == ord('q'):
                 break
@@ -541,9 +550,10 @@ def WarriorPose():
                                       mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                       mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
 
-            numpy_horizontal_concat = np.concatenate((image, image), axis=1)
+            warrImage = cv2.imread('images/warrior_pose_big.png')
+            numpy_horizontal_concat = np.concatenate((image, warrImage), axis=1)
 
-            cv2.imshow('Yoga - Warrior pose', numpy_horizontal_concat)
+            cv2.imshow('Yoga - Warrior pose..', numpy_horizontal_concat)
 
             if cv2.waitKey(10) & 0xFF == ord('q'):
                 break
@@ -661,9 +671,10 @@ def DownwardFacingDog():
                                       mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                       mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
 
-            numpy_horizontal_concat = np.concatenate((image, image), axis=1)
+            downwardImage = cv2.imread('images/downward_facing_dog_big.png')
+            numpy_horizontal_concat = np.concatenate((image, downwardImage), axis=1)
 
-            cv2.imshow('Yoga - Downward facing dog pose', numpy_horizontal_concat)
+            cv2.imshow('Yoga - Downward facing dog..', numpy_horizontal_concat)
 
             if cv2.waitKey(10) & 0xFF == ord('q'):
                 break
@@ -673,13 +684,8 @@ def DownwardFacingDog():
 
 
 if __name__ == "__main__":
-    # Login = Login()
-    # Login.Label()
-    # Login.Entry()
-    # Login.Button()
-    # Login.mainloop()
-
-    workout = Workout()
-    workout.Label()
-    workout.Button()
-    workout.mainloop()
+    Login = Login()
+    Login.Label()
+    Login.Entry()
+    Login.Button()
+    Login.mainloop()

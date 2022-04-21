@@ -1,11 +1,17 @@
 import ctypes
 import re
 from tkinter import *
+import cv2
+import mediapipe as mp
+import numpy as np
 
 import firebase_admin
 import phonenumbers
 from firebase_admin import auth
 from firebase_admin import credentials
+
+mp_drawing = mp.solutions.drawing_utils
+mp_pose = mp.solutions.pose
 
 cred = credentials.Certificate('auth-python-12139-firebase-adminsdk-1y5gj-da7bb50334.json')
 firebase_admin.initialize_app(cred)
@@ -116,7 +122,6 @@ class Login(Tk):
         self.toRegisterButton = Button(self, image=self.toRegisterImage, command=callRegistration, font="25", border=0)
         self.toRegisterButton.place(x=585, y=531)
 
-
     def Log(self):
         Login_email = self.log_email.get()
         Login_PhoneNumber = self.log_phoneNumber.get()
@@ -149,29 +154,530 @@ class Workout(Toplevel):
 
     def Button(self):
         self.warrPose = PhotoImage(file="images/warrior_pose.png")
-        self.warrButton = Button(self, image=self.warrPose, border=0)
+        self.warrButton = Button(self, image=self.warrPose, command=WarriorPose, border=0)
         self.warrButton.place(x=39, y=184)
 
         self.dogPose = PhotoImage(file="images/downward_facing_dog.png")
-        self.dogButton = Button(self, image=self.dogPose, border=0)
+        self.dogButton = Button(self, image=self.dogPose, command=DownwardFacingDog, border=0)
         self.dogButton.place(x=39, y=476)
 
         self.bicepCurl = PhotoImage(file="images/bicep_curl.png")
-        self.bicepButton = Button(self, image=self.bicepCurl, border=0)
+        self.bicepButton = Button(self, image=self.bicepCurl, command=BicepCurl, border=0)
         self.bicepButton.place(x=731, y=184)
 
         self.overheadPress = PhotoImage(file="images/overhead_press.png")
-        self.overheadButton = Button(self, image=self.overheadPress, border=0, bg=None)
+        self.overheadButton = Button(self, image=self.overheadPress, command=OverheadPress, border=0, bg=None)
         self.overheadButton.place(x=731, y=476)
 
 
-if __name__ == "__main__":
+def calculate_angle(a, b, c):
+    a = np.array(a)  # First
+    b = np.array(b)  # Mid
+    c = np.array(c)  # End
 
-    #Login = Login()
-    #Login.Label()
-    #Login.Entry()
-    #Login.Button()
-    #Login.mainloop()
+    radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
+    angle = np.abs(radians * 180.0 / np.pi)
+
+    if angle > 180.0:
+        angle = 360 - angle
+
+    return angle
+
+
+def BicepCurl():
+    cap = cv2.VideoCapture(0)
+
+    # Curl counter variables
+    counter = 0
+    stage = "down"
+    tip = "Start the exercise!"
+
+    # Setup mediapipe instance
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+
+            # Recolor image to RGB
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+
+            # Make detection
+            results = pose.process(image)
+
+            # Recolor back to BGR
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+            # Extract landmarks
+            try:
+                landmarks = results.pose_landmarks.landmark
+
+                # Get coordinates of left arm
+                left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
+                                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+                left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+
+                # Get coordinates of right arm
+                right_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
+                                  landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                right_elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+
+                # Calculate angle
+                left_angle = calculate_angle(left_shoulder, left_elbow, left_wrist)
+                right_angle = calculate_angle(right_shoulder, right_elbow, right_wrist)
+
+                # Visualize angle
+                cv2.putText(image, str(left_angle), tuple(np.multiply(left_elbow, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(right_angle), tuple(np.multiply(right_elbow, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                # Console output
+
+                print("Left angle: ", f'{left_angle:.2f}', " | ", "Right Angle: ", f'{right_angle:.2f}')
+
+                # Curl counter logic
+                if left_angle > 160 and right_angle > 160:
+                    stage = "down"
+                    tip = "Squeeze the biceps to curl the barbell to less than 30 degrees"
+                if 60 > left_angle > 30 and 60 > right_angle > 30:
+                    tip = "Keep the biceps squeezed"
+                if left_angle < 30 and stage == "down" and right_angle < 30:
+                    stage = "up"
+                    tip = "Lower back down, keeping a slight bend in the elbows at the bottom of the motion"
+                    counter += 1
+                    print(counter)
+            except:
+                pass
+
+            # Render curl counter
+            # Setup status box
+            cv2.rectangle(image, (0, 0), (640, 35), (240, 240, 240), -1)
+
+            # Rep data
+            cv2.putText(image, 'Rep count:', (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, str(counter), (105, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Stage data
+            cv2.putText(image, 'Stage:', (150, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, (215, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Tips
+            cv2.putText(image, 'Tip:', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, tip, (42, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                      mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                                      mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
+            cv2.imshow('Bicep curl counter', image)
+
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+def OverheadPress():
+    cap = cv2.VideoCapture(0)
+
+    # Curl counter variables
+    counter = 0
+    stage = "down"
+    tip = "Start the exercise!"
+
+    # Setup mediapipe instance
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+
+            # Recolor image to RGB
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+
+            # Make detection
+            results = pose.process(image)
+
+            # Recolor back to BGR
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+            # Extract landmarks
+            try:
+                landmarks = results.pose_landmarks.landmark
+
+                # Get coordinates of left arm
+                left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
+                                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+                left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+
+                # Get coordinates of right arm
+                right_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
+                                  landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                right_elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+
+                # Calculate angle
+                left_angle = calculate_angle(left_shoulder, left_elbow, left_wrist)
+                right_angle = calculate_angle(right_shoulder, right_elbow, right_wrist)
+
+                # Visualize angle
+                cv2.putText(image, str(left_angle), tuple(np.multiply(left_elbow, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(right_angle), tuple(np.multiply(right_elbow, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                # Console output
+                print("Left angle: ", f'{left_angle:.2f}', " | ", "Right Angle: ", f'{right_angle:.2f}')
+
+                # Curl counter logic
+                if left_angle < 45 and right_angle < 45:
+                    stage = "down"
+                    tip = "Press the bar directly over your head"
+
+                if left_angle > 150 and right_angle > 150 and stage == "down":
+                    stage = "up"
+                    tip = "Slowly lower the bar in the exact same way you raised it"
+                    counter += 1
+                    print(counter)
+
+            except:
+                pass
+
+            # Render curl counter
+            # Setup status box
+            cv2.rectangle(image, (0, 0), (640, 35), (240, 240, 240), -1)
+
+            # Rep data
+            cv2.putText(image, 'Rep count:', (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, str(counter), (105, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Stage data
+            cv2.putText(image, 'Stage:', (150, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, (215, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Tips
+            cv2.putText(image, 'Tip:', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, tip, (42, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                      mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                                      mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
+            cv2.imshow('Overhead press counter', image)
+
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+def WarriorPose():
+    cap = cv2.VideoCapture(0)
+
+    # Warrior Pose counter variables
+    stage = "Not a warrior pose"
+    tip = "Start the exercise!"
+    l_arm, r_arm = "-", "-"
+    l_leg, r_leg = "-", "-"
+
+    # Setup mediapipe instance
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+
+            # Recolor image to RGB
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+
+            # Make detection
+            results = pose.process(image)
+
+            # Recolor back to BGR
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+            # Extract landmarks
+            try:
+                landmarks = results.pose_landmarks.landmark
+
+                # Get coordinates of right leg
+                right_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,
+                             landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                right_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,
+                              landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+
+                # Get coordinates of left leg
+                left_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,
+                            landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+                left_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,
+                             landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                left_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+
+                # Get coordinates of right arm
+                right_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
+                                  landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+
+                # Get coordinates of left arm
+                left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
+                                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+
+                # Calculate angle
+                right_leg_angle = calculate_angle(right_hip, right_knee, right_ankle)
+                left_leg_angle = calculate_angle(left_hip, left_knee, left_ankle)
+
+                right_arm_angle = calculate_angle(right_hip, right_shoulder, right_wrist)
+                left_arm_angle = calculate_angle(left_hip, left_shoulder, left_wrist)
+
+                # Visualize angle
+                cv2.putText(image, str(left_leg_angle), tuple(np.multiply(left_knee, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(right_leg_angle), tuple(np.multiply(right_knee, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(right_arm_angle), tuple(np.multiply(right_shoulder, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(left_arm_angle), tuple(np.multiply(left_shoulder, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                # Console output
+                print("Left leg: ", f'{left_leg_angle:.2f}', " | ", "Right leg: ", f'{right_leg_angle:.2f}', " | ",
+                      "Left arm: ", f'{left_arm_angle:.2f}', " | ", "Right arm: ", f'{right_arm_angle:.2f}')
+
+                # RIGHT LEG = Deg < 110 and Deg > 70
+                # LEFT  LEG = Deg < 170 and Deg > 140
+                # RIGHT ARM = Deg < 190 and Deg > 160
+                # LEFT  ARM = Deg < 190 and Deg > 160
+
+                if 110 > left_leg_angle > 70:
+                    l_leg = "+"
+                else:
+                    l_leg = "-"
+                if 170 > right_leg_angle > 140:
+                    r_leg = "+"
+                else:
+                    r_leg = "-"
+                if 190 > right_arm_angle > 160:
+                    r_arm = "+"
+                else:
+                    r_arm = "-"
+                if 190 > left_arm_angle > 160:
+                    l_arm = "+"
+                else:
+                    l_arm = "-"
+
+                if r_arm == "+" and l_arm == "+":
+                    tip = "Arms are in place, focus on the legs"
+                else:
+                    tip = ""
+                if r_leg == "+" and l_leg == "+":
+                    tip = "Legs are in place, focus on the arms"
+
+                if l_leg == "+" and r_leg == "+" and l_arm == "+" and r_arm == "+":
+                    stage = "Warrior pose achieved"
+                    tip = "Hold the pose"
+                    print("ACHIEVED")
+                else:
+                    stage = "You have not achieved the warrior pose"
+
+            except:
+                pass
+
+            # Setup status box
+            cv2.rectangle(image, (0, 0), (640, 35), (240, 240, 240), -1)
+
+            # Stage data
+            cv2.putText(image, 'Stage:', (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, (55, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Left leg data
+            cv2.putText(image, 'L Leg:', (315, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, l_leg, (360, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Right leg data
+            cv2.putText(image, 'R Leg:', (380, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, r_leg, (425, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Left arm data
+            cv2.putText(image, 'L Arm:', (445, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, l_arm, (490, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Right arm data
+            cv2.putText(image, 'R Arm:', (510, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, r_arm, (555, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Tips
+            cv2.putText(image, 'Tip:', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, tip, (42, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                      mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                                      mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
+            numpy_horizontal_concat = np.concatenate((image, image), axis=1)
+
+            cv2.imshow('Yoga - Warrior pose', numpy_horizontal_concat)
+
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+def DownwardFacingDog():
+    cap = cv2.VideoCapture(0)
+
+    # Warrior Pose counter variables
+    stage = "Not the downward facing dog pose"
+    tip = "Start the exercise!"
+    l_arm, r_arm = "-", "-"
+    l_leg, r_leg = "-", "-"
+
+    # Setup mediapipe instance
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+
+            # Recolor image to RGB
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+
+            # Make detection
+            results = pose.process(image)
+
+            # Recolor back to BGR
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+            # Extract landmarks
+            try:
+                landmarks = results.pose_landmarks.landmark
+
+                # Get coordinates of right arm
+                right_wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+                right_shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
+                                  landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                right_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,
+                             landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+
+                # Get coordinates of right leg
+                right_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,
+                              landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
+                               landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+
+                # Calculate angles
+                right_leg_angle = calculate_angle(right_hip, right_knee, right_ankle)
+                right_arm_angle = calculate_angle(right_wrist, right_shoulder, right_hip)
+
+                # Visualize angles
+                cv2.putText(image, str(right_leg_angle), tuple(np.multiply(right_knee, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(right_arm_angle), tuple(np.multiply(right_shoulder, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                # Console output
+                print("Right leg: ", f'{right_leg_angle:.2f}', " | ", "Right arm: ", f'{right_arm_angle:.2f}')
+
+                # LEG = Deg < 175 and Deg > 165
+                # ARM = Deg < 180 and Deg > 150
+
+                if 175 > right_arm_angle > 155:
+                    r_arm = "+"
+                    tip = "Arms look good, focus on the legs"
+                else:
+                    r_arm = "-"
+                if 180 > right_leg_angle > 150:
+                    r_leg = "+"
+                    tip = "Legs look good, focus on the arms"
+                else:
+                    r_leg = "-"
+
+                if r_arm == "-" and r_leg == "-":
+                    tip = "Nor arms or legs are in place"
+
+                if r_arm == "+" and r_leg == "+":
+                    stage = "Downward facing dog pose achieved"
+                    tip = "Hold the pose"
+                    print("ACHIEVED")
+                else:
+                    stage = "You have not achieved the downward facing dog pose"
+
+
+            except:
+                pass
+
+            # Setup status box
+            cv2.rectangle(image, (0, 0), (640, 35), (240, 240, 240), -1)
+
+            # Stage data
+            cv2.putText(image, 'Stage:', (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, (55, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Left arm data
+            cv2.putText(image, 'R Leg:', (445, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, l_leg, (490, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Right arm data
+            cv2.putText(image, 'R Arm:', (510, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, r_arm, (555, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Tips
+            cv2.putText(image, 'Tip:', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, tip, (42, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                      mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+                                      mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
+            numpy_horizontal_concat = np.concatenate((image, image), axis=1)
+
+            cv2.imshow('Yoga - Downward facing dog pose', numpy_horizontal_concat)
+
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    # Login = Login()
+    # Login.Label()
+    # Login.Entry()
+    # Login.Button()
+    # Login.mainloop()
 
     workout = Workout()
     workout.Label()

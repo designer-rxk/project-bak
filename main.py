@@ -605,6 +605,7 @@ def DownwardFacingDog():
                 right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
                                landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
 
+
                 # Calculate angles
                 right_leg_angle = calculate_angle(right_hip, right_knee, right_ankle)
                 right_arm_angle = calculate_angle(right_wrist, right_shoulder, right_hip)
@@ -622,12 +623,13 @@ def DownwardFacingDog():
                 # LEG = Deg < 175 and Deg > 165
                 # ARM = Deg < 180 and Deg > 150
 
-                if 175 > right_arm_angle > 155:
+                if 180 > right_arm_angle > 150:
                     r_arm = "+"
                     tip = "Arms look good, focus on the legs"
                 else:
                     r_arm = "-"
-                if 180 > right_leg_angle > 150:
+
+                if 180 > right_leg_angle > 165:
                     r_leg = "+"
                     tip = "Legs look good, focus on the arms"
                 else:
@@ -643,7 +645,6 @@ def DownwardFacingDog():
                 else:
                     stage = "You have not achieved the downward facing dog pose"
 
-
             except:
                 pass
 
@@ -656,7 +657,7 @@ def DownwardFacingDog():
 
             # Left arm data
             cv2.putText(image, 'R Leg:', (445, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(image, l_leg, (490, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, r_leg, (490, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
             # Right arm data
             cv2.putText(image, 'R Arm:', (510, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)

@@ -297,7 +297,7 @@ def OverheadPress():
     cap = cv2.VideoCapture(0)
 
     # Curl counter variables
-    counter = 0
+    counter = -1
     stage = "down"
     tip = "Start the exercise!"
 

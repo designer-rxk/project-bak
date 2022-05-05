@@ -191,8 +191,10 @@ def BicepCurl():
     cap = cv2.VideoCapture(0)
 
     # Curl counter variables
-    counter = 0
-    stage = "down"
+    R_counter = 0
+    L_counter = 0
+    L_stage = "down"
+    R_stage = "down"
     tip = "Start the exercise!"
 
     # Setup mediapipe instance
@@ -247,16 +249,27 @@ def BicepCurl():
                 print("Left angle: ", f'{left_angle:.2f}', " | ", "Right Angle: ", f'{right_angle:.2f}')
 
                 # Curl counter logic
-                if left_angle > 160 and right_angle > 160:
-                    stage = "down"
+                if left_angle > 160:
+                    L_stage = "down"
+                if left_angle < 30 and L_stage == "down":
+                    tip = "You got it! Now lower your arm back down and repeat the motion"
+                    L_stage = "up"
+                    L_counter += 1
+
+                if right_angle > 160:
+                    R_stage = "down"
+                if right_angle < 30 and R_stage == "down":
+                    tip = "You got it! Now lower your arm back down and repeat the motion"
+                    R_stage = "up"
+                    R_counter += 1
+
+                if 160 > left_angle > 95 or 160 > right_angle > 95:
                     tip = "Squeeze the biceps to curl the barbell to less than 30 degrees"
-                if 60 > left_angle > 30 and 60 > right_angle > 30:
-                    tip = "Keep the biceps squeezed"
-                if left_angle < 30 and stage == "down" and right_angle < 30:
-                    stage = "up"
-                    tip = "Lower back down, keeping a slight bend in the elbows at the bottom of the motion"
-                    counter += 1
-                    print(counter)
+                if 90 > left_angle > 40 or 90 > right_angle > 40:
+                    tip = "Squeeze the biceps a little bit more"
+
+                print("Left arms rep count: ", f'{L_counter:.0f}', " | ", "Right arms rep count: ", f'{R_counter:.0f}')
+
             except:
                 pass
 
@@ -265,12 +278,21 @@ def BicepCurl():
             cv2.rectangle(image, (0, 0), (640, 35), (240, 240, 240), -1)
 
             # Rep data
-            cv2.putText(image, 'Rep count:', (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(image, str(counter), (105, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            # Right Arm
+            cv2.putText(image, "R-Arm's rep count:", (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, str(R_counter), (145, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Left Arm
+            cv2.putText(image, "L-Arm's rep count:", (165, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1,
+                        cv2.LINE_AA)
+            cv2.putText(image, str(L_counter), (305, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
             # Stage data
-            cv2.putText(image, 'Stage:', (150, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(image, stage, (215, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, 'R-Stage:', (350, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, R_stage, (410, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            cv2.putText(image, 'L-Stage:', (450, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, L_stage, (510, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
             # Tips
             cv2.putText(image, 'Tip:', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
@@ -605,7 +627,6 @@ def DownwardFacingDog():
                 right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
                                landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
 
-
                 # Calculate angles
                 right_leg_angle = calculate_angle(right_hip, right_knee, right_ankle)
                 right_arm_angle = calculate_angle(right_wrist, right_shoulder, right_hip)
@@ -685,8 +706,12 @@ def DownwardFacingDog():
 
 
 if __name__ == "__main__":
+    BicepCurl()
+
+    '''
     Login = Login()
     Login.Label()
     Login.Entry()
     Login.Button()
     Login.mainloop()
+    '''

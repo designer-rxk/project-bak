@@ -706,12 +706,9 @@ def DownwardFacingDog():
 
 
 if __name__ == "__main__":
-    BicepCurl()
 
-    '''
     Login = Login()
     Login.Label()
     Login.Entry()
     Login.Button()
     Login.mainloop()
-    '''

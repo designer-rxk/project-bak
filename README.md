@@ -19,7 +19,7 @@ This project supports 4 exercises:
 - Strength training:
   - Bicep Curl
   - Overhead Press
-- Yoga Poses:
+- Yoga poses:
   - Warrior Pose
   - Downwards facing dog Pose
 

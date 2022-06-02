@@ -13,7 +13,7 @@ from firebase_admin import credentials
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-cred = credentials.Certificate('auth-python-12139-firebase-adminsdk-1y5gj-da7bb50334.json')
+cred = credentials.Certificate('ENTER YOUR FIREBASE CERTIFICATE .json')
 firebase_admin.initialize_app(cred)
 regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
 

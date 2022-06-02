@@ -4,7 +4,7 @@ To `run` install dependencies
 
   - Set up your Firebase credentials by adding a auth-python-firebase-admin.json and adding your Firebase certificate in line #16
 
-  - An alternative is to delete Login credential check or by adding a callWorkout() in line #129
+  - An alternative is to delete Login credential check or by adding a `callWorkout()` in line #129
 
 Then run `main.py`
 

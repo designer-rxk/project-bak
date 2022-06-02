@@ -14,10 +14,6 @@ It uses Python 3.10 as an interpreter
 
 -----
 
-This project was inspired by Nicholas Renotte's project https://github.com/nicknochnack/MediaPipePoseEstimation
-
------
-
 This project supports 4 exercises:
 
 - Strength training:
@@ -30,3 +26,7 @@ This project supports 4 exercises:
 -----
 
 Feel free to use this code for your own purposes
+
+-----
+
+This project was inspired by Nicholas Renotte's project https://github.com/nicknochnack/MediaPipePoseEstimation

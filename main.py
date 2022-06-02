@@ -13,7 +13,7 @@ from firebase_admin import credentials
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-cred = credentials.Certificate('INSERT-CERTIFICATE-FROM-FIREBASE-HERE')
+cred = credentials.Certificate('auth-python-12139-firebase-adminsdk-1y5gj-da7bb50334.json')
 firebase_admin.initialize_app(cred)
 regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
 
@@ -126,7 +126,10 @@ class Login(Tk):
     def Log(self):
         Login_email = self.log_email.get()
         Login_PhoneNumber = self.log_phoneNumber.get()
+        callWorkout()
 
+
+'''
         if Login_email != "" and re.search(regex, Login_email):
             checkUser = auth.get_user_by_email(Login_email)
             if len(checkUser.uid) == 28:
@@ -140,6 +143,7 @@ class Login(Tk):
         else:
             print("Please enter a valid email or a password!")
             ctypes.windll.user32.MessageBoxW(0, "Please enter a valid email or a password!", "Error", 0)
+'''
 
 
 class Workout(Toplevel):
@@ -506,11 +510,11 @@ def WarriorPose():
                 # RIGHT ARM = Deg < 190 and Deg > 160
                 # LEFT  ARM = Deg < 190 and Deg > 160
 
-                if 110 > left_leg_angle > 70:
+                if 110 > right_leg_angle > 70:
                     l_leg = "+"
                 else:
                     l_leg = "-"
-                if 170 > right_leg_angle > 140:
+                if 170 > left_leg_angle > 140:
                     r_leg = "+"
                 else:
                     r_leg = "-"
@@ -587,11 +591,10 @@ def WarriorPose():
 def DownwardFacingDog():
     cap = cv2.VideoCapture(0)
 
-    # Warrior Pose counter variables
+    # DFD counter variables
     stage = "Not the downward facing dog pose"
     tip = "Start the exercise!"
-    l_arm, r_arm = "-", "-"
-    l_leg, r_leg = "-", "-"
+    arm, leg, waist = "-", "-", "-"
 
     # Setup mediapipe instance
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
@@ -621,18 +624,45 @@ def DownwardFacingDog():
                 right_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,
                              landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
 
+                # Get coordinates of left arm
+                left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+                left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
+                                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                left_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,
+                            landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+
                 # Get coordinates of right leg
                 right_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,
                               landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
                 right_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,
                                landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
 
+                # Get coordinates of left leg
+                left_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,
+                             landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                left_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,
+                              landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+
                 # Calculate angles
                 right_leg_angle = calculate_angle(right_hip, right_knee, right_ankle)
                 right_arm_angle = calculate_angle(right_wrist, right_shoulder, right_hip)
 
+                left_leg_angle = calculate_angle(left_hip, left_knee, left_ankle)
+                left_arm_angle = calculate_angle(left_wrist, left_shoulder, left_hip)
+
+                left_waist_angle = calculate_angle(left_knee, left_hip, left_shoulder)
+                right_waist_angle = calculate_angle(right_knee, right_hip, right_shoulder)
+
                 # Visualize angles
                 cv2.putText(image, str(right_leg_angle), tuple(np.multiply(right_knee, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(f'{left_waist_angle:.1f}'), tuple(np.multiply(left_hip, [640, 480]).astype(int)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+
+                cv2.putText(image, str(f'{right_waist_angle:.1f}'),
+                            tuple(np.multiply(right_hip, [640, 480]).astype(int)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 
                 cv2.putText(image, str(right_arm_angle), tuple(np.multiply(right_shoulder, [640, 480]).astype(int)),
@@ -640,26 +670,33 @@ def DownwardFacingDog():
 
                 # Console output
                 print("Right leg: ", f'{right_leg_angle:.2f}', " | ", "Right arm: ", f'{right_arm_angle:.2f}')
+                print("Left leg: ", f'{left_leg_angle:.2f}', " | ", "Left arm: ", f'{left_arm_angle:.2f}')
+                print("Left waist: ", f'{left_waist_angle:.2f}', " | ", "Right waist: ", f'{right_waist_angle:.2f}')
 
-                # LEG = Deg < 175 and Deg > 165
+                # LEG = Deg < 180 and Deg > 165
                 # ARM = Deg < 180 and Deg > 150
 
-                if 180 > right_arm_angle > 150:
-                    r_arm = "+"
+                if 180 > right_arm_angle > 150 or 180 > left_arm_angle > 150:
+                    arm = "+"
                     tip = "Arms look good, focus on the legs"
                 else:
-                    r_arm = "-"
+                    arm = "-"
 
-                if 180 > right_leg_angle > 165:
-                    r_leg = "+"
+                if 180 > right_leg_angle > 165 or 180 > left_leg_angle > 165:
+                    leg = "+"
                     tip = "Legs look good, focus on the arms"
                 else:
-                    r_leg = "-"
+                    leg = "-"
 
-                if r_arm == "-" and r_leg == "-":
+                if 110 > right_waist_angle > 70 or 110 > left_waist_angle > 70:
+                    waist = "+"
+                else:
+                    waist = "-"
+
+                if arm == "-" and leg == "-" and waist == "-":
                     tip = "Nor arms or legs are in place"
 
-                if r_arm == "+" and r_leg == "+":
+                if arm == "+" and leg == "+" and waist == "+":
                     stage = "Downward facing dog pose achieved"
                     tip = "Hold the pose"
                     print("ACHIEVED")
@@ -677,12 +714,16 @@ def DownwardFacingDog():
             cv2.putText(image, stage, (55, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
             # Left arm data
-            cv2.putText(image, 'R Leg:', (445, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(image, r_leg, (490, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, 'Legs:', (445, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, leg, (490, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
             # Right arm data
-            cv2.putText(image, 'R Arm:', (510, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(image, r_arm, (555, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, 'Arms:', (510, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, arm, (555, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+
+            # Waist data
+            cv2.putText(image, 'Waist:', (510, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, waist, (555, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
             # Tips
             cv2.putText(image, 'Tip:', (5, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
@@ -706,7 +747,6 @@ def DownwardFacingDog():
 
 
 if __name__ == "__main__":
-
     Login = Login()
     Login.Label()
     Login.Entry()

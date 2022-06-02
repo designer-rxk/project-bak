@@ -18,6 +18,15 @@ This project was inspired by Nicholas Renotte's project https://github.com/nickn
 
 Tho it was hevily modified and improved by the help of a certified fitness trainer
 
+This project supports 4 exercises:
+
+- Strength training:
+  - Bicep Curl
+  - Overhead Press
+- Yoga Poses:
+  - Warrior Pose
+  - Downwards facing dog Pose
+
 -----
 
 Feel free to use this code for your own purposes

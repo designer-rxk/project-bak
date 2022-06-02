@@ -16,8 +16,6 @@ It uses Python 3.10 as an interpreter
 
 This project was inspired by Nicholas Renotte's project https://github.com/nicknochnack/MediaPipePoseEstimation
 
-Tho it was hevily modified and improved by the help of a certified fitness trainer
-
 -----
 
 This project supports 4 exercises:

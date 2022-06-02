@@ -126,10 +126,7 @@ class Login(Tk):
     def Log(self):
         Login_email = self.log_email.get()
         Login_PhoneNumber = self.log_phoneNumber.get()
-        callWorkout()
 
-
-'''
         if Login_email != "" and re.search(regex, Login_email):
             checkUser = auth.get_user_by_email(Login_email)
             if len(checkUser.uid) == 28:
@@ -143,7 +140,6 @@ class Login(Tk):
         else:
             print("Please enter a valid email or a password!")
             ctypes.windll.user32.MessageBoxW(0, "Please enter a valid email or a password!", "Error", 0)
-'''
 
 
 class Workout(Toplevel):

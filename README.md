@@ -36,7 +36,7 @@ Guidelines for the bicep curl exercise:
 - Recommended user clothing: It does not matter
 - Recommended number of people per frame: Not relevant
 
-----
+
 
 Guidelines for the overhead press exercise:
 
@@ -47,14 +47,14 @@ Guidelines for the overhead press exercise:
 - Recommended user clothing: Does not matter
 - Recommended number of people per frame: Not relevant
 
-----
+
 
 Guidelines for the warrior pose exercise:
 
 - Recommended position against the camera: With the right or left side facing the camera, as it is shown in the illustration
 - Recommended distance from the camera: 1.5 to 5 meters
 
-----
+
 
 Guidelines for the downwards facing dog pose exercise:
 
